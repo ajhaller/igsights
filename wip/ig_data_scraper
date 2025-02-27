@@ -1,0 +1,88 @@
+import requests
+import json
+import time
+from pprint import pprint
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+
+# --- Load Configuration Securely ---
+def load_config():
+    with open("insights_config.json", "r") as config_file:
+        return json.load(config_file)
+
+config = load_config()
+ACCESS_TOKEN = config["ACCESS_TOKEN"]
+ACCOUNT_ID = config["ACCOUNT_ID"]
+CHROMEDRIVER_PATH = config["CHROMEDRIVER_PATH"]
+
+BASE_URL = "https://graph.facebook.com/v17.0/"
+
+# --- Instagram Graph API Setup ---
+
+def get_instagram_insights():
+# refer to https://developers.facebook.com/docs/instagram-platform/api-reference/instagram-user/insights for more details
+    endpoint = f"{BASE_URL}{ACCOUNT_ID}/insights"
+    params = {
+        "metric": "likes",
+        "period": "day",
+        #"timeframe": "last_90_days",
+        "metric_type": "total_value",
+        #"breakdown": "BREAKDOWN_METRIC>
+        #"since": "1740096000",
+        #"until": "1740613184",
+        "access_token": ACCESS_TOKEN
+    }
+    response = requests.get(endpoint, params=params)
+    return response.json()
+
+# --- Scraping Public Competitor Data ---
+def scrape_instagram_profile(username):
+    url = f"https://www.instagram.com/{username}/"
+    options = Options()
+    options.headless = True
+    service = Service(CHROMEDRIVER_PATH)  # Update with your chromedriver path
+    driver = webdriver.Chrome(service=service, options=options)
+    driver.get(url)
+    time.sleep(5)  # Allow page to load
+    soup = BeautifulSoup(driver.page_source, "html.parser")
+    driver.quit()
+    
+    # Extract follower count (Example, might need tweaking)
+    meta_tag = soup.find("meta", property="og:description")
+    if meta_tag:
+        content = meta_tag["content"]
+        followers = content.split(" Followers")[0].split(" ")[-1]
+        return {"username": username, "followers": followers}
+    else:
+        return {"username": username, "followers": "Not found"}
+
+# --- Hashtag Analysis ---
+def get_hashtag_data(hashtag):
+    url = f"https://www.instagram.com/explore/tags/{hashtag}/"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+    
+    # Extract post count (Example, might need tweaking)
+    meta_tag = soup.find("meta", property="og:description")
+    if meta_tag:
+        content = meta_tag["content"]
+        posts = content.split(" Posts")[0].split(" ")[-1]
+        return {"hashtag": hashtag, "posts": posts}
+    else:
+        return {"hashtag": hashtag, "posts": "Not found"}
+
+# --- Example Usage ---
+if __name__ == "__main__":
+    print("Fetching Instagram Insights...")
+    insights = get_instagram_insights()
+    print(json.dumps(insights, indent=2))
+    
+    # print("Scraping competitor data...")
+    # competitor_data = scrape_instagram_profile("locwithaush")
+    # print(competitor_data)
+    
+    # print("Fetching hashtag data...")
+    # hashtag_data = get_hashtag_data("locjourney")
+    # print(hashtag_data)
