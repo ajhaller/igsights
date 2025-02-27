@@ -7,6 +7,10 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 # --- Load Configuration Securely ---
 def load_config():
     with open("insights_config.json", "r") as config_file:
@@ -18,6 +22,21 @@ ACCOUNT_ID = config["ACCOUNT_ID"]
 CHROMEDRIVER_PATH = config["CHROMEDRIVER_PATH"]
 
 BASE_URL = "https://graph.facebook.com/v17.0/"
+
+# --- Driver Connections ---
+def connect_chrome_driver(url):
+    # Fetches the full Instagram post HTML
+    options = Options()
+    options.headless = True
+    service = Service(CHROMEDRIVER_PATH)  # Update with your chromedriver path
+    driver = webdriver.Chrome(service=service, options=options)
+    driver.get(url)
+    time.sleep(5)  # Allow JavaScript to load fully
+    return driver
+
+def disconnect_chrome_driver(driver):
+    driver.quit() # Close the driver
+    return None
 
 # --- Instagram Graph API Setup ---
 
@@ -39,22 +58,24 @@ def get_instagram_insights():
 
 # --- Scraping Post Data ---
 
-def get_instagram_html(url):
-    """Fetches the full Instagram post HTML"""
-    options = Options()
-    options.headless = True
-    service = Service(CHROMEDRIVER_PATH)  # Update with your chromedriver path
-    driver = webdriver.Chrome(service=service, options=options)
-    driver.get(url)
-    time.sleep(5)  # Allow JavaScript to load fully
-    page_source = driver.page_source
-    driver.quit() # Close the driver
-    return page_source
-
 def scrape_ig_post(url):
-    html = get_instagram_html(url)
+
+    # Fetches the full Instagram post HTML
+    driver = connect_chrome_driver(url)
+
+    ## Instagram loads likes dynamically, this section is required to gather like count
+    # Wait for the likes element to load
+    try:
+        likes_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//a[contains(@href, 'liked_by')]/span/span"))
+        )
+        likes_text = likes_element.text.strip()
+    except:
+        likes_text = "Not Found"
+
     # Parse the HTML with BeautifulSoup
-    soup = BeautifulSoup(html, "html.parser")
+    soup = BeautifulSoup(driver.page_source, "html.parser")
+    disconnect_chrome_driver(driver)
 
     # Extract caption text
     caption_element = soup.find("h1", class_="_ap3a")
@@ -63,20 +84,17 @@ def scrape_ig_post(url):
     # Extract hashtags
     hashtags = [a.get_text() for a in soup.find_all("a") if a.get_text().startswith("#")]
 
-    return caption_text + " " + " ".join(hashtags)
+    #likes = [span.get_text() for span in soup.find_all("span") if span.get_text().startswith("#")]
+
+    return caption_text + " " + " ".join(hashtags) + " --- " + likes_text + " likes"
 
 # --- Scraping Public Competitor Data ---
 
 def scrape_instagram_profile(username):
     url = f"https://www.instagram.com/{username}/"
-    options = Options()
-    options.headless = True
-    service = Service(CHROMEDRIVER_PATH)  # Update with your chromedriver path
-    driver = webdriver.Chrome(service=service, options=options)
-    driver.get(url)
-    time.sleep(5)  # Allow page to load
+    driver = connect_chrome_driver(url)
     soup = BeautifulSoup(driver.page_source, "html.parser")
-    driver.quit()
+    disconnect_chrome_driver(driver)
     
     # Extract follower count 
     meta_tag = soup.find("meta", property="og:description")
@@ -90,31 +108,22 @@ def scrape_instagram_profile(username):
 # --- Hashtag Analysis ---
 def get_hashtag_data(hashtag):
     url = f"https://www.instagram.com/explore/tags/{hashtag}/"
-    url = "https://www.instagram.com/p/C4MD664OnI6/"
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, "html.parser")
-    print(soup)
-    
-    # Extract caption text
-    caption_element = soup.find("h1", class_="_ap3a")
-    caption_text = caption_element.get_text(" ", strip=True) if caption_element else ""
+    driver = connect_chrome_driver(url)
+    soup = BeautifulSoup(driver.page_source, "html.parser")
+    disconnect_chrome_driver(driver)
 
-    # Extract hashtags
-    hashtags = [a.get_text() for a in soup.find_all("a") if a.get_text().startswith("#")]
-
-    return caption_text + " " + " ".join(hashtags)
-    
-    # # Extract post count (Example, might need tweaking)
-    # meta_tag = soup.find("meta", property="og:description")
-    # if meta_tag:
-    #     content = meta_tag["content"]
-    #     print(content)
-    #     posts = content.split(" Posts")[0].split(" ")[-1]
-    #     return {"hashtag": hashtag, "posts": posts}
-    # else:
-    #     return {"hashtag": hashtag, "posts": "Not found"}
+    # Extract post count (Example, might need tweaking)
+    meta_tag = soup.find("meta", property="og:description")
+    if meta_tag:
+        content = meta_tag["content"]
+        print(content)
+        posts = content.split(" Posts")[0].split(" ")[-1]
+        return {"hashtag": hashtag, "posts": posts}
+    else:
+        return {"hashtag": hashtag, "posts": "Not found"}
 
 if __name__ == "__main__":
+
     # print("Fetching Instagram Insights...")
     # insights = get_instagram_insights()
     # print(json.dumps(insights, indent=2))
@@ -131,3 +140,4 @@ if __name__ == "__main__":
     # print("Scraping post data...")
     # post_data = scrape_ig_post(url)
     # print(post_data)
+    
