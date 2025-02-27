@@ -37,7 +37,36 @@ def get_instagram_insights():
     response = requests.get(endpoint, params=params)
     return response.json()
 
+# --- Scraping Post Data ---
+
+def get_instagram_html(url):
+    """Fetches the full Instagram post HTML"""
+    options = Options()
+    options.headless = True
+    service = Service(CHROMEDRIVER_PATH)  # Update with your chromedriver path
+    driver = webdriver.Chrome(service=service, options=options)
+    driver.get(url)
+    time.sleep(5)  # Allow JavaScript to load fully
+    page_source = driver.page_source
+    driver.quit() # Close the driver
+    return page_source
+
+def scrape_ig_post(url):
+    html = get_instagram_html(url)
+    # Parse the HTML with BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Extract caption text
+    caption_element = soup.find("h1", class_="_ap3a")
+    caption_text = caption_element.get_text(" ", strip=True) if caption_element else ""
+
+    # Extract hashtags
+    hashtags = [a.get_text() for a in soup.find_all("a") if a.get_text().startswith("#")]
+
+    return caption_text + " " + " ".join(hashtags)
+
 # --- Scraping Public Competitor Data ---
+
 def scrape_instagram_profile(username):
     url = f"https://www.instagram.com/{username}/"
     options = Options()
@@ -61,27 +90,44 @@ def scrape_instagram_profile(username):
 # --- Hashtag Analysis ---
 def get_hashtag_data(hashtag):
     url = f"https://www.instagram.com/explore/tags/{hashtag}/"
+    url = "https://www.instagram.com/p/C4MD664OnI6/"
     response = requests.get(url)
     soup = BeautifulSoup(response.text, "html.parser")
+    print(soup)
     
-    # Extract post count (Example, might need tweaking)
-    meta_tag = soup.find("meta", property="og:description")
-    if meta_tag:
-        content = meta_tag["content"]
-        posts = content.split(" Posts")[0].split(" ")[-1]
-        return {"hashtag": hashtag, "posts": posts}
-    else:
-        return {"hashtag": hashtag, "posts": "Not found"}
+    # Extract caption text
+    caption_element = soup.find("h1", class_="_ap3a")
+    caption_text = caption_element.get_text(" ", strip=True) if caption_element else ""
+
+    # Extract hashtags
+    hashtags = [a.get_text() for a in soup.find_all("a") if a.get_text().startswith("#")]
+
+    return caption_text + " " + " ".join(hashtags)
+    
+    # # Extract post count (Example, might need tweaking)
+    # meta_tag = soup.find("meta", property="og:description")
+    # if meta_tag:
+    #     content = meta_tag["content"]
+    #     print(content)
+    #     posts = content.split(" Posts")[0].split(" ")[-1]
+    #     return {"hashtag": hashtag, "posts": posts}
+    # else:
+    #     return {"hashtag": hashtag, "posts": "Not found"}
 
 if __name__ == "__main__":
-    print("Fetching Instagram Insights...")
-    insights = get_instagram_insights()
-    print(json.dumps(insights, indent=2))
+    # print("Fetching Instagram Insights...")
+    # insights = get_instagram_insights()
+    # print(json.dumps(insights, indent=2))
     
-    print("Scraping competitor data...")
-    competitor_data = scrape_instagram_profile("locwithaush")
-    print(competitor_data)
+    # print("Scraping competitor data...")
+    # competitor_data = scrape_instagram_profile("locwithaush")
+    # print(competitor_data)
     
     # print("Fetching hashtag data...")
     # hashtag_data = get_hashtag_data("locjourney")
     # print(hashtag_data)
+
+    url = "https://www.instagram.com/p/DD44j8juJCa/"
+    # print("Scraping post data...")
+    # post_data = scrape_ig_post(url)
+    # print(post_data)
