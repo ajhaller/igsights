@@ -49,7 +49,7 @@ def scrape_instagram_profile(username):
     soup = BeautifulSoup(driver.page_source, "html.parser")
     driver.quit()
     
-    # Extract follower count (Example, might need tweaking)
+    # Extract follower count 
     meta_tag = soup.find("meta", property="og:description")
     if meta_tag:
         content = meta_tag["content"]
@@ -73,15 +73,14 @@ def get_hashtag_data(hashtag):
     else:
         return {"hashtag": hashtag, "posts": "Not found"}
 
-# --- Example Usage ---
 if __name__ == "__main__":
     print("Fetching Instagram Insights...")
     insights = get_instagram_insights()
     print(json.dumps(insights, indent=2))
     
-    # print("Scraping competitor data...")
-    # competitor_data = scrape_instagram_profile("locwithaush")
-    # print(competitor_data)
+    print("Scraping competitor data...")
+    competitor_data = scrape_instagram_profile("locwithaush")
+    print(competitor_data)
     
     # print("Fetching hashtag data...")
     # hashtag_data = get_hashtag_data("locjourney")
