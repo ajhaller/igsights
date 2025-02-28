@@ -38,7 +38,7 @@ def disconnect_chrome_driver(driver):
     driver.quit() # Close the driver
     return None
 
-# --- Instagram Graph API Setup ---
+# --- Instagram Graph API Setup and Request---
 
 def get_instagram_insights():
 # refer to https://developers.facebook.com/docs/instagram-platform/api-reference/instagram-user/insights for more details
@@ -58,6 +58,8 @@ def get_instagram_insights():
 
 # --- Scraping Post Data ---
 
+## --- Helpers --
+
 def check_likes(driver, media):
     ## Instagram loads likes dynamically, this is required to gather like count
     # Wait for the likes element to load
@@ -70,7 +72,7 @@ def check_likes(driver, media):
         return None
     
     try:
-        likes_element = WebDriverWait(driver, 20).until(
+        likes_element = WebDriverWait(driver, 15).until(
             EC.presence_of_element_located((By.XPATH, html))
         )
         likes_text = likes_element.get_attribute("innerHTML").strip()
@@ -90,7 +92,7 @@ def check_caption(driver, media):
         return None
     
     try:
-        caption_element = WebDriverWait(driver, 20).until(
+        caption_element = WebDriverWait(driver, 15).until(
             EC.presence_of_element_located((By.XPATH, html))
         )
         caption_text = caption_element.get_attribute("innerText")
@@ -98,6 +100,30 @@ def check_caption(driver, media):
         print(f"Error: {e}")
         caption_text = "Not Found"
     return caption_text
+
+def check_hashtags(driver, media):
+    # Wait for the caption element to load
+    
+    if media == "post":
+        html = "//a[contains(text(), '#')]"
+    elif media == "reel":
+        # UNDER CONSTRUCTION
+        # html = "//a[contains(text(), '#')]"
+        return None
+    else:
+        return None
+    
+    try:
+        hashtags_element = WebDriverWait(driver, 15).until(
+            EC.presence_of_all_elements_located((By.XPATH, html))
+        )
+        hashtags_text = [element.text for element in hashtags_element]
+    except Exception as e:
+        print(f"Error: {e}")
+        hashtags_text = "Not Found"
+    return hashtags_text
+
+## --- Scrapers ---
 
 def scrape_ig_post(url):
 
@@ -107,13 +133,11 @@ def scrape_ig_post(url):
     # Instagram loads some elements dynamically
     likes_text = check_likes(driver, "post")
     caption_text = check_caption(driver, "post")
+    hashtags = check_hashtags(driver, "post")
 
     # Parse the HTML with BeautifulSoup
     soup = BeautifulSoup(driver.page_source, "html.parser")
     disconnect_chrome_driver(driver)
-
-    # Extract hashtags
-    hashtags = [a.get_text() for a in soup.find_all("a") if a.get_text().startswith("#")]
 
     return caption_text, hashtags, likes_text
 
@@ -125,6 +149,7 @@ def scrape_ig_reel(url):
     # Instagram loads some elements dynamically
     likes_text = check_likes(driver, "reel")
     caption_text = check_caption(driver, "reel")
+    hashtags = check_hashtags(driver, "reel")
 
     # Parse the HTML with BeautifulSoup
     soup = BeautifulSoup(driver.page_source, "html.parser")
@@ -132,9 +157,9 @@ def scrape_ig_reel(url):
 
     # NEED TO FIX
     # Extract hashtags
-    hashtags = [a.get_text() for a in soup.find_all("a") if a.get_text().startswith("#")]
+    # hashtags = [a.get_text() for a in soup.find_all("a") if a.get_text().startswith("#")]
 
-    return caption_text + " " + " ".join(hashtags) + " --- " + likes_text + " likes"
+    return caption_text, hashtags, likes_text
 
 # --- Scraping Public Profile Data ---
 
@@ -171,12 +196,13 @@ def get_hashtag_data(hashtag):
         return {"hashtag": hashtag, "posts": "Not found"}
 
 if __name__ == "__main__":
-
+    placeholder = None
+    
     # print("Fetching Instagram Insights...")
     # insights = get_instagram_insights()
     # print(json.dumps(insights, indent=2))
     
-    # print("Scraping competitor data...")
+    # print("Scraping profile data...")
     # competitor_data = scrape_instagram_profile("locwithaush")
     # print(competitor_data)
     
@@ -184,12 +210,11 @@ if __name__ == "__main__":
     # hashtag_data = get_hashtag_data("locjourney")
     # print(hashtag_data)
 
-    post = "https://www.instagram.com/p/DEgepvgRB-J/"
-    reel = "https://www.instagram.com/reels/DGl0LAApSrn/"
-    print("Scraping reel data...")
-    post_data = scrape_ig_reel(reel)
-    print(post_data)
+    # post = "https://www.instagram.com/p/DEgepvgRB-J/"
+    # reel = "https://www.instagram.com/reels/DGl0LAApSrn/"
+    # print("Scraping reel data...")
+    # post_data = scrape_ig_reel(reel)
+    # print(post_data)
     # print("Scraping post data...")
     # post_data = scrape_ig_post(post)
     # print(post_data)
-    
