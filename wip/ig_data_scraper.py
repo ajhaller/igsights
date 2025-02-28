@@ -58,37 +58,85 @@ def get_instagram_insights():
 
 # --- Scraping Post Data ---
 
+def check_likes(driver, media):
+    ## Instagram loads likes dynamically, this is required to gather like count
+    # Wait for the likes element to load
+    
+    if media == "post":
+        html = "//a[contains(@href, 'liked_by')]/span/span"
+    elif media == "reel":
+        html = "//span[contains(@class, 'xdj266r x11i5rnm')]"
+    else:
+        return None
+    
+    try:
+        likes_element = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, html))
+        )
+        likes_text = likes_element.get_attribute("innerHTML").strip()
+    except Exception as e:
+        print(f"Error: {e}")
+        likes_text = "Not Found"
+    return likes_text
+
+def check_caption(driver, media):
+    # Wait for the caption element to load
+    
+    if media == "post":
+        html = "//h1[contains(@class, '_ap3a')]"
+    elif media == "reel":
+        html = "//span[contains(@class, 'x6ikm8r x10wlt62 xuxw1ft')]"
+    else:
+        return None
+    
+    try:
+        caption_element = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, html))
+        )
+        caption_text = caption_element.get_attribute("innerText")
+    except Exception as e:
+        print(f"Error: {e}")
+        caption_text = "Not Found"
+    return caption_text
+
 def scrape_ig_post(url):
 
     # Fetches the full Instagram post HTML
     driver = connect_chrome_driver(url)
 
-    ## Instagram loads likes dynamically, this section is required to gather like count
-    # Wait for the likes element to load
-    try:
-        likes_element = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//a[contains(@href, 'liked_by')]/span/span"))
-        )
-        likes_text = likes_element.text.strip()
-    except:
-        likes_text = "Not Found"
+    # Instagram loads some elements dynamically
+    likes_text = check_likes(driver, "post")
+    caption_text = check_caption(driver, "post")
 
     # Parse the HTML with BeautifulSoup
     soup = BeautifulSoup(driver.page_source, "html.parser")
     disconnect_chrome_driver(driver)
 
-    # Extract caption text
-    caption_element = soup.find("h1", class_="_ap3a")
-    caption_text = caption_element.get_text(" ", strip=True) if caption_element else ""
-
     # Extract hashtags
     hashtags = [a.get_text() for a in soup.find_all("a") if a.get_text().startswith("#")]
 
-    #likes = [span.get_text() for span in soup.find_all("span") if span.get_text().startswith("#")]
+    return caption_text, hashtags, likes_text
+
+def scrape_ig_reel(url):
+
+    # Fetches the full Instagram post HTML
+    driver = connect_chrome_driver(url)
+
+    # Instagram loads some elements dynamically
+    likes_text = check_likes(driver, "reel")
+    caption_text = check_caption(driver, "reel")
+
+    # Parse the HTML with BeautifulSoup
+    soup = BeautifulSoup(driver.page_source, "html.parser")
+    disconnect_chrome_driver(driver)
+
+    # NEED TO FIX
+    # Extract hashtags
+    hashtags = [a.get_text() for a in soup.find_all("a") if a.get_text().startswith("#")]
 
     return caption_text + " " + " ".join(hashtags) + " --- " + likes_text + " likes"
 
-# --- Scraping Public Competitor Data ---
+# --- Scraping Public Profile Data ---
 
 def scrape_instagram_profile(username):
     url = f"https://www.instagram.com/{username}/"
@@ -136,8 +184,12 @@ if __name__ == "__main__":
     # hashtag_data = get_hashtag_data("locjourney")
     # print(hashtag_data)
 
-    url = "https://www.instagram.com/p/DD44j8juJCa/"
+    post = "https://www.instagram.com/p/DEgepvgRB-J/"
+    reel = "https://www.instagram.com/reels/DGl0LAApSrn/"
+    print("Scraping reel data...")
+    post_data = scrape_ig_reel(reel)
+    print(post_data)
     # print("Scraping post data...")
-    # post_data = scrape_ig_post(url)
+    # post_data = scrape_ig_post(post)
     # print(post_data)
     
