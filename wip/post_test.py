@@ -3,13 +3,16 @@ import datetime
 import schedule
 import time
 import os
-from ig_data_scraper import scrape_ig_post 
+from ig_data_scraper import scrape_ig_post, load_config 
 
 def my_script():
     print("Running script...")
 
+    config = load_config()
+    POST_TEST_PATH = config["POST_TEST_PATH"]
+
     url = "https://www.instagram.com/p/DGlXekKOweU/"
-    filename = "data/raw_data/post_test.csv"
+    filename = POST_TEST_PATH
 
     # Scrape post details
     caption, hashtags, likes = scrape_ig_post(url)
@@ -33,7 +36,7 @@ def my_script():
 
 
 # Run every day at 7 AM
-schedule.every().day.at("07:00").do(my_script)
+schedule.every().day.at("11:45").do(my_script)
 
 while True:
     schedule.run_pending()
