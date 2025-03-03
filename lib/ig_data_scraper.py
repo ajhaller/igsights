@@ -2,6 +2,7 @@ import requests
 import json
 import time
 import random
+import os
 import pickle
 from pprint import pprint
 from bs4 import BeautifulSoup
@@ -16,20 +17,15 @@ from selenium.webdriver.support import expected_conditions as EC
 
 # --- Load Configuration Securely ---
 def load_config():
+    # Sets path to lib folder
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     with open("insights_config.json", "r") as config_file:
-        return json.load(config_file)
-
-config = load_config()
-ACCESS_TOKEN = config["ACCESS_TOKEN"]
-ACCOUNT_ID = config["ACCOUNT_ID"]
-CHROMEDRIVER_PATH = config["CHROMEDRIVER_PATH"]
-INSTAGRAM_USERNAME = config["INSTAGRAM_USERNAME"]
-INSTAGRAM_PASSWORD = config["INSTAGRAM_PASSWORD"]
-
-BASE_URL = "https://graph.facebook.com/v17.0/"
+        config = json.load(config_file)
+        return config
 
 # --- Instagram Login ---
 def intizalize_ig_login():
+    config = load_config()
     driver = webdriver.Chrome()
     driver.get("https://www.instagram.com")
 
@@ -40,8 +36,8 @@ def intizalize_ig_login():
         password_input = driver.find_element(By.NAME, "password")
 
         # Enter credentials
-        username_input.send_keys(INSTAGRAM_USERNAME)
-        password_input.send_keys(INSTAGRAM_PASSWORD)
+        username_input.send_keys(config['INSTAGRAM_USERNAME'])
+        password_input.send_keys(config['INSTAGRAM_PASSWORD'])
         password_input.send_keys(Keys.RETURN)
         
         time.sleep(15)  # Wait for 2FA to complete
@@ -52,11 +48,6 @@ def intizalize_ig_login():
     
     except Exception as e:
         print(f"Login failed: {e}")
-
-    # input("Log in manually and press Enter here...")  # Wait for manual login
-
-    # pickle.dump(driver.get_cookies(), open("instagram_cookies.pkl", "wb"))
-    # print("Cookies saved!")
 
 # intizalize_ig_login()
 
@@ -84,9 +75,10 @@ def connect_chrome_driver(url, login=False):
         driver = ig_login()
     else:
         # Fetches the full Instagram post HTML
+        config = load_config()
         options = Options()
         options.headless = True
-        service = Service(CHROMEDRIVER_PATH)  # Update with your chromedriver path
+        service = Service(config['CHROMEDRIVER_PATH'])  # Update with your chromedriver path
         driver = webdriver.Chrome(service=service, options=options)
     # Get url data
     driver.get(url)
@@ -101,7 +93,8 @@ def disconnect_chrome_driver(driver):
 
 def get_instagram_insights():
 # refer to https://developers.facebook.com/docs/instagram-platform/api-reference/instagram-user/insights for more details
-    endpoint = f"{BASE_URL}{ACCOUNT_ID}/insights"
+    config = load_config()
+    endpoint = f"https://graph.facebook.com/v18.0/{config['ACCOUNT_ID']}/insights"
     params = {
         "metric": "likes",
         "period": "day",
@@ -110,7 +103,7 @@ def get_instagram_insights():
         #"breakdown": "BREAKDOWN_METRIC>
         #"since": "1740096000",
         #"until": "1740613184",
-        "access_token": ACCESS_TOKEN
+        "access_token": config['ACCESS_TOKEN']
     }
     response = requests.get(endpoint, params=params)
     return response.json()
@@ -219,7 +212,7 @@ def get_ig_post_links(username, max_scrolls=100):
 
         # Wait for new posts to load
         try:
-            WebDriverWait(driver, 5).until(
+            WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, "//a[contains(@href, '/p/') or contains(@href, '/reel/')]"))
             )
         except:
@@ -314,16 +307,16 @@ if __name__ == "__main__":
     # hashtag_data = get_hashtag_data("locjourney")
     # print(hashtag_data)
 
-    # reel = "https://www.instagram.com/reels/DGl0LAApSrn/"
+    # reel = "https://www.instagram.com/reels/DGgN8WJODI8/"
     # print("Scraping reel data...")
     # post_data = scrape_ig_reel(reel)
     # print(post_data)
 
-    # post = "https://www.instagram.com/p/DEgepvgRB-J/"
-    # print("Scraping post data...")
-    # post_data = scrape_ig_post(post)
-    # print(post_data)
+    post = "https://www.instagram.com/p/DGqaNAZOfga/"
+    print("Scraping post data...")
+    post_data = scrape_ig_post(post)
+    print(post_data)
 
-    print("Scraping post urls...")
-    posts = get_ig_post_links("locwithaush")
-    print(posts)
+    # print("Scraping post urls...")
+    # posts = get_ig_post_links("locwithaush")
+    # print(posts)

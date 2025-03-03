@@ -1,3 +1,5 @@
 insights_config.json
 nohup.out
 instagram_cookies.pkl
+tests_to_lib.json
+__pycache__/
