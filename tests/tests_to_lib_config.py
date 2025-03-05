@@ -9,3 +9,5 @@ def set_path():
             config = json.load(config_file)
         sys.path.insert(0, lib_path)
         return config
+    
+set_path()

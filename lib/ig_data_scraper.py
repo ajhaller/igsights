@@ -5,6 +5,7 @@ import random
 import os
 import pickle
 from pprint import pprint
+from PIL import Image
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -60,6 +61,8 @@ def ig_login():
     time.sleep(2)
 
     # Load saved cookies
+    # Sets path to lib folder
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     cookies = pickle.load(open("instagram_cookies.pkl", "rb"))
     for cookie in cookies:
         driver.add_cookie(cookie)
@@ -69,7 +72,7 @@ def ig_login():
     return driver
 
 # --- Driver Connections ---
-def connect_chrome_driver(url, login=False):
+def connect_chrome_driver(login=False):
     # IG Login
     if login:
         driver = ig_login()
@@ -79,10 +82,8 @@ def connect_chrome_driver(url, login=False):
         options = Options()
         options.headless = True
         service = Service(config['CHROMEDRIVER_PATH'])  # Update with your chromedriver path
-        driver = webdriver.Chrome(service=service, options=options)
-    # Get url data
-    driver.get(url)
-    time.sleep(5)  # Allow JavaScript to load fully
+        driver = webdriver.Chrome(service=service, options=options)  
+
     return driver
 
 def disconnect_chrome_driver(driver):
@@ -112,16 +113,11 @@ def get_instagram_insights():
 
 ## --- Helpers --
 
-def check_likes(driver, media):
+def check_likes(driver):
     ## Instagram loads likes dynamically, this is required to gather like count
     # Wait for the likes element to load
-    
-    if media == "post":
-        html = "//a[contains(@href, 'liked_by')]/span/span"
-    elif media == "reel":
-        html = "//span[contains(@class, 'xdj266r x11i5rnm')]"
-    else:
-        return None
+
+    html = "//a[contains(@href, 'liked_by')]/span/span"
     
     try:
         likes_element = WebDriverWait(driver, 15).until(
@@ -133,37 +129,43 @@ def check_likes(driver, media):
         likes_text = "Not Found"
     return likes_text
 
-def check_caption(driver, media):
+def check_caption(driver):
     # Wait for the caption element to load
+
+    #html = "//h1[contains(@class, '_ap3a')]/text()"
+    #html = "//span[contains(@class, 'x6ikm8r x10wlt62 xuxw1ft')]"
+    #html = '//h1'
     
-    if media == "post":
-        html = "//h1[contains(@class, '_ap3a')]"
-    elif media == "reel":
-        html = "//span[contains(@class, 'x6ikm8r x10wlt62 xuxw1ft')]"
-    else:
-        return None
+    # if media == "post":
+    #     html = "//h1[contains(@class, '_ap3a')]"
+    # elif media == "reel":
+    #     html = "//span[contains(@class, 'x6ikm8r x10wlt62 xuxw1ft')]"
+    # else:
+    #     return None
     
+    # try:
+    #     caption_element = WebDriverWait(driver, 15).until(
+    #         EC.presence_of_element_located((By.XPATH, html))
+    #     )
+    #     caption_text = caption_element.get_attribute("innerText")
+
     try:
-        caption_element = WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.XPATH, html))
-        )
-        caption_text = caption_element.get_attribute("innerText")
+        caption_text = WebDriverWait(driver, 25).until(
+        #caption_element = WebDriverWait(driver, 15).until(
+            EC.visibility_of_element_located((By.TAG_NAME, "h1"))
+            # EC.presence_of_element_located((By.XPATH, html))
+        ).text
+        #caption_text = caption_element.get_attribute("innerText")
     except Exception as e:
         print(f"Error: {e}")
         caption_text = "Not Found"
+
     return caption_text
 
-def check_hashtags(driver, media):
+def check_hashtags(driver):
     # Wait for the caption element to load
     
-    if media == "post":
-        html = "//a[contains(text(), '#')]"
-    elif media == "reel":
-        # UNDER CONSTRUCTION
-        # html = "//a[contains(text(), '#')]"
-        return None
-    else:
-        return None
+    html = "//a[contains(text(), '#')]"
     
     try:
         hashtags_element = WebDriverWait(driver, 15).until(
@@ -175,13 +177,22 @@ def check_hashtags(driver, media):
         hashtags_text = "Not Found"
     return hashtags_text
 
+def get_data(driver, url):
+    # Get url data
+    driver.get(url)
+    time.sleep(5)  # Allow JavaScript to load fully
+    return driver
+
 ## --- Scrapers ---
 
-def get_ig_post_links(username, max_scrolls=100):
+def get_ig_post_links(username, max_scrolls=100, connected_driver=None, login=False):
     url = f"https://www.instagram.com/{username}/"
 
-    # Fetches the full Instagram post HTML
-    driver = connect_chrome_driver(url, True)
+    if connected_driver is None:
+        # Fetches the full Instagram post HTML
+        connected_driver = connect_chrome_driver(login=login)
+
+    driver = get_data(connected_driver, url)
 
     # Extract post URLs
     post_links = set()
@@ -222,47 +233,81 @@ def get_ig_post_links(username, max_scrolls=100):
     disconnect_chrome_driver(driver)
     return list(post_links), len(post_links)
 
-def scrape_ig_post(url):
+def download_image(url, connected_driver=None, login=False, save_path="_image.jpg"):
+    
+    config = load_config()
+    IMAGE_PATH = config['IMAGE_PATH']
 
-    # Fetches the full Instagram post HTML
-    driver = connect_chrome_driver(url)
+    if url is not None:
+        try:
+            response = requests.get(url, timeout=10)
+            # Check if the request was successful
+            if response.status_code == 200:
+                if connected_driver is None:
+                    # Fetches the full Instagram post HTML
+                    connected_driver = connect_chrome_driver(login=login)
+
+                driver = get_data(connected_driver, url)
+
+                html = "//img[contains(@alt, 'Photo by')]"
+                post_id = url.split("/p/")[1].strip("/")
+
+                try:
+                    image_elements = WebDriverWait(driver, 15).until(
+                        EC.presence_of_all_elements_located((By.XPATH, html))
+                    )
+                    img_url = image_elements[0].get_attribute("src")
+
+                    # Download and save the image
+                    response = requests.get(img_url, stream=True)
+                    if response.status_code == 200:
+                        os.makedirs(IMAGE_PATH, exist_ok=True)
+                        with open(IMAGE_PATH + post_id + save_path, "wb") as file:
+                            for chunk in response.iter_content(1024):
+                                file.write(chunk)
+                        print(f"Image saved as {post_id + save_path}")
+                        return IMAGE_PATH + post_id + save_path
+                    else:
+                        print("Failed to download image")
+                        return "Failed to download"
+                except Exception as e:
+                    print(f"Error: {e}")
+                    return "Not Found"
+        except Exception as e:
+                    print(f"Error: {e}")
+                    return "URL did not work. Use the permalink for the instagram post."
+
+def scrape_ig_post(url, connected_driver=None, login=False):
+
+    if connected_driver is None:
+        # Fetches the full Instagram post HTML
+        connected_driver = connect_chrome_driver(login=login)
+
+    driver_data = get_data(connected_driver, url)
 
     # Instagram loads some elements dynamically
-    likes_text = check_likes(driver, "post")
-    caption_text = check_caption(driver, "post")
-    hashtags = check_hashtags(driver, "post")
+    likes_text = check_likes(driver_data)
+    # caption_text = check_caption(driver_data, media)
+    hashtags = check_hashtags(driver_data)
 
     # Parse the HTML with BeautifulSoup
-    soup = BeautifulSoup(driver.page_source, "html.parser")
-    disconnect_chrome_driver(driver)
+    soup = BeautifulSoup(driver_data.page_source, "html.parser")
 
-    return caption_text, hashtags, likes_text
+    if connected_driver is None:
+        disconnect_chrome_driver(driver_data)
 
-def scrape_ig_reel(url):
+    #return caption_text, hashtags, likes_text
+    return hashtags, likes_text
 
-    # Fetches the full Instagram post HTML
-    driver = connect_chrome_driver(url)
-
-    # Instagram loads some elements dynamically
-    likes_text = check_likes(driver, "reel")
-    caption_text = check_caption(driver, "reel")
-    hashtags = check_hashtags(driver, "reel")
-
-    # Parse the HTML with BeautifulSoup
-    soup = BeautifulSoup(driver.page_source, "html.parser")
-    disconnect_chrome_driver(driver)
-
-    # NEED TO FIX
-    # Extract hashtags
-    # hashtags = [a.get_text() for a in soup.find_all("a") if a.get_text().startswith("#")]
-
-    return caption_text, hashtags, likes_text
-
-# --- Scraping Public Profile Data ---
-
-def scrape_instagram_profile(username):
+def scrape_instagram_profile(username, connected_driver=None, login=False):
     url = f"https://www.instagram.com/{username}/"
-    driver = connect_chrome_driver(url)
+
+    if connected_driver is None:
+        # Fetches the full Instagram post HTML
+        connected_driver = connect_chrome_driver(login=login)
+
+    driver = get_data(connected_driver, url)
+    
     soup = BeautifulSoup(driver.page_source, "html.parser")
     disconnect_chrome_driver(driver)
     
@@ -276,9 +321,14 @@ def scrape_instagram_profile(username):
         return {"username": username, "followers": "Not found"}
 
 # --- Hashtag Analysis ---
-def get_hashtag_data(hashtag):
+def get_hashtag_data(hashtag, connected_driver=None, login=False):
     url = f"https://www.instagram.com/explore/tags/{hashtag}/"
-    driver = connect_chrome_driver(url)
+
+    if connected_driver is None:
+        # Fetches the full Instagram post HTML
+        connected_driver = connect_chrome_driver(login=login)
+
+    driver = get_data(connected_driver, url)
     soup = BeautifulSoup(driver.page_source, "html.parser")
     disconnect_chrome_driver(driver)
 
@@ -307,15 +357,18 @@ if __name__ == "__main__":
     # hashtag_data = get_hashtag_data("locjourney")
     # print(hashtag_data)
 
-    # reel = "https://www.instagram.com/reels/DGgN8WJODI8/"
-    # print("Scraping reel data...")
-    # post_data = scrape_ig_reel(reel)
+    # post = "https://www.instagram.com/p/DGqaNAZOfga/"
+    # print("Scraping post data...")
+    # post_data = scrape_ig_post(url=post, login=True)
     # print(post_data)
 
-    post = "https://www.instagram.com/p/DGqaNAZOfga/"
-    print("Scraping post data...")
-    post_data = scrape_ig_post(post)
-    print(post_data)
+    # print("Downloading Image...")
+    # post = "https://www.instagram.com/p/DGQxLfTum2n/"
+    # image_path = download_image(post)
+    # print(image_path)
+    # # Open and display the image
+    # img = Image.open(image_path)
+    # img.show()
 
     # print("Scraping post urls...")
     # posts = get_ig_post_links("locwithaush")

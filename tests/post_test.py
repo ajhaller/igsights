@@ -17,17 +17,19 @@ def my_script():
     filename = POST_TEST_CSV_PATH
 
     # Scrape post details
-    caption, hashtags, likes = scrape_ig_post(url)
+    # caption, hashtags, likes = scrape_ig_post(url)
+    hashtags, likes = scrape_ig_post(url)
 
     # Prepare data
     datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     num_likes = int(likes) if likes.isdigit() else 0
     hashtags_str = ", ".join(hashtags)  # Convert list to string
 
     # Save data for new entry
     new_entry = pd.DataFrame({"datetime_now": [datetime_now], 
                     "num_likes": [num_likes], 
-                    "caption": [caption], 
+                    #"caption": [caption], 
                     "hashtags": [hashtags_str]})
     
     # Creates new df or adds row
