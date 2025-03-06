@@ -11,7 +11,7 @@ def my_script():
     # Set up
     config = set_path()
     METRICS_PATH = config["METRICS_PATH"]
-    from ig_data_scraper import scrape_ig_post, connect_chrome_driver, disconnect_chrome_driver
+    from ig_data_scraper import scrape_ig_post, connect_chrome_driver, disconnect_chrome_driver # type: ignore
     filename = METRICS_PATH
     post_data = pd.read_csv(config['RAW_DATA_PATH']+"unique_post_data.csv")
     driver = connect_chrome_driver(login=True)
@@ -19,21 +19,20 @@ def my_script():
     for idx, row in post_data.iterrows():
         
         # Scrape post details
-        # caption, hashtags, likes = scrape_ig_post(row['Permalink'], driver)
-        hashtags, likes = scrape_ig_post(row['Permalink'], driver)
+        elements = scrape_ig_post(row['Permalink'], driver)
 
         # Prepare data
         datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        num_likes = int(likes) if likes.isdigit() else 0
-        hashtags_str = ", ".join(hashtags)  # Convert list to string
+        num_likes = int(elements['likes']) if elements['likes'].isdigit() else 0
 
         # Save data for new entry
         new_entry = pd.DataFrame({"post_id": row['Post ID'],
                                 "permalink": row['Permalink'],
                                 "datetime_now": [datetime_now], 
                                 "num_likes": [num_likes], 
-                                # "caption": [caption], 
-                                "hashtags": [hashtags_str]})
+                                # "caption": [elements['caption']], 
+                                # "comments": [elements['comments']], 
+                                "hashtags": [elements['likes']]})
         
         # Creates new df or adds row
         if os.path.exists(filename):
