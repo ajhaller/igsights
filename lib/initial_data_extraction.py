@@ -32,11 +32,16 @@ def merge_csv_files(folder_path):
         else:
             merged_df = pd.concat([merged_df, df], ignore_index=True)
     
+    # In case of overlap
+    merged_df = merged_df.drop_duplicates()
+    
     return merged_df
 
-if __name__ == "__main__":
-    placeholder = None
+def update_data():
     final_df = merge_csv_files(INTIAL_EXTRACT_PATH)
     if final_df is not None:
         print(final_df.head())  # Display first few rows
         final_df.to_csv(RAW_DATA_PATH + "merged_intial_extract_data.csv", index=False)  # Save as CSV
+
+if __name__ == "__main__":
+    update_data()
