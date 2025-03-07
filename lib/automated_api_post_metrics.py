@@ -3,7 +3,7 @@ import pandas as pd
 import time
 import datetime
 import schedule
-from tests_to_lib_config import set_path 
+from ig_data_scraper import load_config, get_media_insights
 
 def post_metrics():
 
@@ -11,8 +11,7 @@ def post_metrics():
     print("Running script...")
 
     # SET UP
-    config = set_path()
-    from ig_data_scraper import get_media_insights # type: ignore
+    config = load_config()
     filename = config["POST_METRICS_PATH"]
     post_data = pd.read_csv(config['M_INTITAL_EXTRACT'])
 

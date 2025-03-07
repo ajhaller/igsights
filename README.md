@@ -1,1 +1,1 @@
-# instasights
+# igsights
