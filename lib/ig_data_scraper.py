@@ -173,7 +173,7 @@ def disconnect_chrome_driver(driver):
 
 # --- Instagram Graph API Setup and Request---
 
-def get_media_insights(post_id, type="feed", breakdown=None):
+def get_media_insights(post_id, type="IG image", breakdown=None):
     """
     Fetches insights data for a specific Instagram post via the Facebook Graph API.
 
@@ -183,11 +183,11 @@ def get_media_insights(post_id, type="feed", breakdown=None):
 
     Args:
         post_id (str): The unique identifier for the Instagram post.
-        type (str): The type of post, which can be "feed", "reel", or another type. Default is "feed".
+        type (str): The type of post, which can be "IG image", "IG carousel", "IG reel", or another type. Default is "IG image".
         breakdown (str, optional): The breakdown parameter for more detailed insights (e.g., "age", "gender"). Default is None.
 
     Returns:
-        dict: A JSON response containing the requested post insights, or an error message.
+        response: response containing the requested post insights, or an error message.
 
     Example:
         response = get_media_insights("1234567890", type="reel", breakdown="age")
@@ -200,12 +200,12 @@ def get_media_insights(post_id, type="feed", breakdown=None):
     config = load_config()
     endpoint = f"https://graph.facebook.com/v22.0/{post_id}/insights"
     
-    if type == "feed":
-        metrics = "comments, follows, impressions, likes, profile_activity, profile_visits, reach, saved, shares, total_interactions, views"
-    elif type == "reel":
-        metrics = "clips_replays_count, comments, ig_reels_aggregated_all_plays_count, ig_reels_avg_watch_time, ig_reels_video_view_total_time, likes, plays, reach, saved, shares, total_interactions, views"
+    if type == "IG image" or type == "IG carousel":
+        metrics = "comments, follows, likes, profile_activity, profile_visits, reach, saved, shares, total_interactions, views"
+    elif type == "IG reel":
+        metrics = "comments, ig_reels_avg_watch_time, ig_reels_video_view_total_time, likes, reach, saved, shares, total_interactions, views"
     else:
-        metrics = "comments, impressions, navigation, profile_activity, profile_visits, reach, replies, shares, total_interactions, views",
+        metrics = "comments, navigation, profile_activity, profile_visits, reach, replies, shares, total_interactions, views",
 
     if breakdown:
         params = {
@@ -222,7 +222,8 @@ def get_media_insights(post_id, type="feed", breakdown=None):
         }
 
     response = requests.get(endpoint, params=params)
-    return response.json()
+        
+    return response
 
 def business_discovery(username):
     """
@@ -788,7 +789,8 @@ if __name__ == "__main__":
     
     placeholder = None
 
-    pprint(get_media_insights("18020822986857508", type="feed", breakdown=None))
+    # response = get_media_insights("18006224720706139", type="IG reel", breakdown=None)
+    # print(response.json())
 
     # print(business_discovery("locwithaush"))
 
