@@ -198,7 +198,7 @@ def get_media_insights(post_id, type="IG image", breakdown=None):
     """
 
     config = load_config()
-    endpoint = f"https://graph.facebook.com/v22.0/{post_id}/insights"
+    endpoint = f"https://graph.facebook.com/{post_id}/insights"
     
     if type == "IG image" or type == "IG carousel":
         metrics = "comments, follows, likes, profile_activity, profile_visits, reach, saved, shares, total_interactions, views"
@@ -789,8 +789,8 @@ if __name__ == "__main__":
     
     placeholder = None
 
-    # response = get_media_insights("18006224720706139", type="IG reel", breakdown=None)
-    # print(response.json())
+    #response = get_media_insights("18001667618673220", type="IG image", breakdown=None)
+    #print(response.json())
 
     # print(business_discovery("locwithaush"))
 

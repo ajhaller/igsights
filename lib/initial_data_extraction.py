@@ -21,10 +21,12 @@ def merge_csv_files(folder_path):
     
     for file in csv_files:
         file_path = os.path.join(folder_path, file)
+        file_stats = os.stat(file_path)
+        download_time = file_stats.st_ctime  
         df = pd.read_csv(file_path)
 
         # Add a datetime column capturing the current timestamp
-        df['datetime_now'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        df['datetime_extracted'] = datetime.fromtimestamp(download_time)
         
         # Merge with the previous dataframe
         if merged_df is None:
@@ -33,8 +35,8 @@ def merge_csv_files(folder_path):
             merged_df = pd.concat([merged_df, df], ignore_index=True)
     
     # In case of overlap
-    merged_df = merged_df.drop_duplicates()
-    
+    merged_df = merged_df.drop_duplicates(subset=['Post ID'], keep='first')
+
     return merged_df
 
 def update_data():
@@ -42,6 +44,8 @@ def update_data():
     if final_df is not None:
         print(final_df.head())  # Display first few rows
         final_df.to_csv(RAW_DATA_PATH + "merged_intial_extract_data.csv", index=False)  # Save as CSV
+    else:
+        print("Resulting dataframe is None. An error has occured.")
 
 if __name__ == "__main__":
     update_data()
