@@ -3,45 +3,61 @@ import pandas as pd
 import time
 import datetime
 import schedule
-from ig_data_scraper import load_config, get_media_insights
+from ig_data_scraper import load_config, get_media_insights, business_discovery
 from initial_data_extraction import update_data
 
-def check_duplicates(filename, daily=None):
-    df = pd.read_csv(filename)
+# Helper Functions
+
+def remove_duplicates(filename, sheet_name=None, type="post"):
+    df = pd.read_csv(filename + ".csv")
     df['datetime_insights_pulled'] = pd.to_datetime(df['datetime_insights_pulled'])
     df['insights_pulled_date_only'] = df['datetime_insights_pulled'].dt.date
-    df.drop_duplicates(subset=['id', 'insights_pulled_date_only', 'name'], keep='first', inplace=True)
-    df.drop('insights_pulled_date_only', axis=1, inplace=True)
-    if daily is not None:
-        df.to_csv(filename, mode="w", index=False, header=True)
-        df.to_excel(daily + ".xlsx", sheet_name="post_metrics", index=False) 
+    if type == "post":
+        df.drop_duplicates(subset=['id', 'insights_pulled_date_only', 'name'], keep='first', inplace=True)
     else:
-        df.to_csv(filename, mode="w", index=False, header=True)
+        df.drop_duplicates(subset=['insights_pulled_date_only'], keep='first', inplace=True)
+    df.drop('insights_pulled_date_only', axis=1, inplace=True)
+    if sheet_name is not None:
+        df.to_csv(filename + ".csv", mode="w", index=False, header=True)
+        df.to_excel(filename + ".xlsx", sheet_name=sheet_name, index=False) 
+    else:
+        df.to_csv(filename + ".csv", mode="w", index=False, header=True)
 
 def merge_data(filename, post_data):
-    post_metrics = pd.read_csv(filename)
+    post_metrics = pd.read_csv(filename + ".csv")
     post_metrics['Post ID'] = post_metrics['id']
     merged_df = pd.merge(post_metrics, post_data, on='Post ID', how='left')
     return merged_df
 
-def export_merged_df(merged_df, daily_post_metrics_path):
-    if os.path.exists(daily_post_metrics_path + ".csv"):
-        merged_df.to_csv(daily_post_metrics_path + ".csv", mode="a", index=False, header=False)  # Append without headers
-        new_df = pd.read_csv(daily_post_metrics_path + ".csv")
-        new_df.to_excel(daily_post_metrics_path + ".xlsx", sheet_name="post_metrics", index=False) # Update excel file
-    else:
-        merged_df.to_csv(daily_post_metrics_path + ".csv", mode="w", index=False, header=True)   # Create file with headers
-        merged_df.to_excel(daily_post_metrics_path + ".xlsx", sheet_name="post_metrics", index=False) 
+def export_df(df, metrics_path, sheet_name="Sheet 1"):
+    if sheet_name == "Sheet 1":
+        print("Warning: Sheet name was not supplied. The sheet name has defaulted to Sheet 1, but it's highly recommended to provide a sheet name.")
 
-def clean_and_export(filename, post_data, daily_post_metrics_path):
-    # checks duplicates in post_metrics
-    check_duplicates(filename)
+    if os.path.exists(metrics_path + ".csv"):
+        df.to_csv(metrics_path + ".csv", mode="a", index=False, header=False)  # Append without headers
+        new_df = pd.read_csv(metrics_path + ".csv")
+        new_df.to_excel(metrics_path + ".xlsx", sheet_name=sheet_name, index=False) # Update excel file
+    else:
+        df.to_csv(metrics_path + ".csv", mode="w", index=False, header=True)   # Create file with headers
+        df.to_excel(metrics_path + ".xlsx", sheet_name=sheet_name, index=False) 
+        
+# Clean & Export Functions
+
+def clean_and_export_post_metrics(post_metrics_path, post_data, daily_post_metrics_path):
+    # removes duplicates in post_metrics and overwrites current version
+    remove_duplicates(post_metrics_path, sheet_name="post_metrics", type="post")
     # merges with intial post extract data
-    merged_df = merge_data(filename, post_data)
-    # updates csv and excel files
-    export_merged_df(merged_df, daily_post_metrics_path)
-    # double checks daily_post_metrics for duplicates
-    check_duplicates(daily_post_metrics_path + ".csv", daily=daily_post_metrics_path)
+    merged_df = merge_data(post_metrics_path, post_data)
+    # exports daily_post_metrics csv and xlsx
+    export_df(merged_df, daily_post_metrics_path, sheet_name="post_metrics")
+    # double checks daily_post_metrics for duplicates after merge
+    remove_duplicates(daily_post_metrics_path, sheet_name="post_metrics", type="post")
+
+def clean_and_export_profile_metrics(daily_profile_metrics_path):
+    # removes duplicates in profile_metrics and overwrites current version
+    remove_duplicates(daily_profile_metrics_path, sheet_name="profile_metrics", type="profile")
+
+# Requests
 
 def post_metrics():
 
@@ -50,7 +66,8 @@ def post_metrics():
 
     # SET UP
     config = load_config()
-    filename = config["POST_METRICS_PATH"]
+    post_metrics_csv_path = config["POST_METRICS_PATH"]
+    post_metrics_path = config["RAW_DATA_PATH"] + "post_metrics"
     daily_post_metrics_path = config['CLEANED_DATA_PATH'] + "daily_post_metrics"
     update_data()
     post_data = pd.read_csv(config['M_INTITAL_EXTRACT'])
@@ -77,24 +94,53 @@ def post_metrics():
             # ADDING COLUMNS FOR POST_DATA
 
             df['datetime_insights_pulled'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # change to date
+            df['datetime_insights_pulled'] = pd.to_datetime(df['datetime_insights_pulled'])
         
             # Creates new df or adds df to csv
-            if os.path.exists(filename):
-                df.to_csv(filename, mode="a", index=False, header=False)  # Append without headers
+            if os.path.exists(post_metrics_csv_path):
+                df.to_csv(post_metrics_csv_path, mode="a", index=False, header=False)  # Append without headers
             else:
-                df.to_csv(filename, mode="w", index=False, header=True)   # Create file with headers
+                df.to_csv(post_metrics_csv_path, mode="w", index=False, header=True)   # Create file with headers
 
         else:
             continue
 
-    clean_and_export(filename, post_data, daily_post_metrics_path)
+    clean_and_export_post_metrics(post_metrics_path, post_data, daily_post_metrics_path)
 
-    end_time = time.time()  # End the timer
-    elapsed_time = end_time - start_time  # Calculate elapsed time
-    print(f"This script ran for: {elapsed_time:.2f} seconds")
+def follower_tracker():
+    config = load_config()
+    metrics_path = config['CLEANED_DATA_PATH'] + "daily_profile_metrics"
+    follower_dict = business_discovery(config["INSTAGRAM_USERNAME"])
+    media_count = follower_dict['business_discovery']['media_count']
+    follower_count = follower_dict['business_discovery']['followers_count']
 
-# Run every day at 1:11AM
-schedule.every().day.at("01:11").do(post_metrics)
+     # Create a new DataFrame with the current stats
+    df = pd.DataFrame({
+        "datetime_insights_pulled": [datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+        "follower_count": [follower_count],
+        "media_count": [media_count]
+    })
+
+    # change to date
+    df['datetime_insights_pulled'] = pd.to_datetime(df['datetime_insights_pulled'])
+
+    # Creates new df or adds df to csv
+    if os.path.exists(metrics_path + ".csv"):
+        df.to_csv(metrics_path + ".csv", mode="a", index=False, header=False)  # Append without headers
+    else:
+        df.to_csv(metrics_path + ".csv", mode="w", index=False, header=True)   # Create file with headers
+
+    clean_and_export_profile_metrics(metrics_path)
+
+# Final Script
+
+def automated_script():
+    post_metrics()
+    follower_tracker()
+
+# Run every day at 7:30PM
+schedule.every().day.at("19:30").do(automated_script)
 
 while True:
     schedule.run_pending()
