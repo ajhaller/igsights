@@ -1,0 +1,13 @@
+Metric Name,Title,Value,extraction_datetime,extraction_date,extraction_year,extraction_month,extraction_day,extraction_time
+reach,Accounts reached,2096,2025-04-01 16:52:19.984178,2025-04-01,2025,April,1,16:52:19
+website_clicks,Website link taps,2,2025-04-01 16:52:19.984178,2025-04-01,2025,April,1,16:52:19
+profile_views,Profile visits,110,2025-04-01 16:52:19.984178,2025-04-01,2025,April,1,16:52:19
+total_interactions,Content interactions,266,2025-04-01 16:52:19.984178,2025-04-01,2025,April,1,16:52:19
+likes,Likes,226,2025-04-01 16:52:19.984178,2025-04-01,2025,April,1,16:52:19
+comments,Comments,16,2025-04-01 16:52:19.984178,2025-04-01,2025,April,1,16:52:19
+shares,Shares,12,2025-04-01 16:52:19.984178,2025-04-01,2025,April,1,16:52:19
+saves,Saves,8,2025-04-01 16:52:19.984178,2025-04-01,2025,April,1,16:52:19
+replies,Replies,4,2025-04-01 16:52:19.984178,2025-04-01,2025,April,1,16:52:19
+views,Views,4001,2025-04-01 16:52:19.984178,2025-04-01,2025,April,1,16:52:19
+follows_and_unfollows,Follows and unfollows,0,2025-04-01 16:52:19.984178,2025-04-01,2025,April,1,16:52:19
+profile_links_taps,Profile links taps,0,2025-04-01 16:52:19.984178,2025-04-01,2025,April,1,16:52:19

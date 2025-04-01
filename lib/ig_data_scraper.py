@@ -4,6 +4,7 @@ import time
 import random
 import os
 import pickle
+import pandas as pd
 from pprint import pprint
 from PIL import Image
 from bs4 import BeautifulSoup
@@ -225,6 +226,83 @@ def get_media_insights(post_id, type="IG image", breakdown=None):
         
     return response
 
+def get_media_data(fields):
+    "Gets media data"
+
+    config = load_config()
+    ig_user_id = config ['ACCOUNT_ID']
+    endpoint = f"https://graph.facebook.com/v22.0/{ig_user_id}"
+    
+    params = {
+        "fields": f"media{{{fields},insights.metric(impressions,reach,likes,comments,shares,follows,views)}}",
+        "access_token": config['ACCESS_TOKEN'],
+         "limit": 1000
+    }
+         
+    all_posts = media_data_request(endpoint, params)
+        
+    return all_posts
+
+def get_profile_data(fields):
+    "Gets profile data"
+
+    config = load_config()
+    ig_user_id = config ['ACCOUNT_ID']
+    endpoint = f"https://graph.facebook.com/v22.0/{ig_user_id}"
+    
+    params = {
+        "fields": fields,
+        "access_token": config['ACCESS_TOKEN'],
+        "limit": 1000
+    }
+
+    response = requests.get(endpoint, params=params)
+    data = response.json()
+        
+    return data
+
+def get_demographic_insights():
+    "Gets profile data"
+
+    config = load_config()
+    ig_user_id = config ['ACCOUNT_ID']
+    endpoint = f"https://graph.facebook.com/v22.0/{ig_user_id}/insights"
+    
+    # Lifetime Period
+    params = {
+        "metric": "engaged_audience_demographics,reached_audience_demographics,follower_demographics",
+        "period": "lifetime",
+        "metric_type": "total_value",
+        "timeframe": "this_month",
+        "breakdown": "age,gender",
+        "access_token": config['ACCESS_TOKEN']
+    }
+
+    response = requests.get(endpoint, params=params)
+    lifetime_data = response.json()
+        
+    return lifetime_data
+
+def get_actions_insights():
+
+    config = load_config()
+    ig_user_id = config ['ACCOUNT_ID']
+    endpoint = f"https://graph.facebook.com/v22.0/{ig_user_id}/insights"
+
+    # Day Period
+    params = {
+        "metric": "reach, website_clicks, profile_views, total_interactions, likes, comments, shares, saves, replies, views, follows_and_unfollows, profile_links_taps",
+        "period": "day",
+        "metric_type": "total_value",
+        "timeframe": "this_month",
+        "access_token": config['ACCESS_TOKEN']
+    }
+
+    response = requests.get(endpoint, params=params)
+    data = response.json()
+        
+    return data
+
 def business_discovery(username):
     """
     Fetches business discovery data for a specific Instagram account using the Facebook Graph API.
@@ -387,97 +465,6 @@ def check_likes(driver):
         likes_text = "Not Found"
     return likes_text
 
-# UNDER CONSTRUCTION
-def check_caption(driver):
-    """
-    Retrieves the caption text of an Instagram post or reel by waiting for the caption element to load.
-
-    Instagram captions are loaded dynamically, so this function waits for the caption element to become 
-    visible, extracts the caption text, and returns it. If the caption element cannot be located or an error 
-    occurs, it returns 'Not Found'.
-
-    Args:
-        driver (WebDriver): The Selenium WebDriver instance that is controlling the browser.
-
-    Returns:
-        str: The caption text of the Instagram post or reel, or "Not Found" if the caption cannot be retrieved.
-
-    Example:
-        caption = check_caption(driver)
-        print(caption)
-
-    Reference:
-        This function relies on the dynamic loading of Instagram caption elements via Selenium and XPath.
-    """
-    # Wait for the caption element to load
-
-    #html = "//h1[contains(@class, '_ap3a')]/text()"
-    #html = "//span[contains(@class, 'x6ikm8r x10wlt62 xuxw1ft')]"
-    #html = '//h1'
-    
-    # if media == "post":
-    #     html = "//h1[contains(@class, '_ap3a')]"
-    # elif media == "reel":
-    #     html = "//span[contains(@class, 'x6ikm8r x10wlt62 xuxw1ft')]"
-    # else:
-    #     return None
-    
-    # try:
-    #     caption_element = WebDriverWait(driver, 15).until(
-    #         EC.presence_of_element_located((By.XPATH, html))
-    #     )
-    #     caption_text = caption_element.get_attribute("innerText")
-
-    try:
-        caption_text = WebDriverWait(driver, 25).until(
-        #caption_element = WebDriverWait(driver, 15).until(
-            EC.visibility_of_element_located((By.TAG_NAME, "h1"))
-            # EC.presence_of_element_located((By.XPATH, html))
-        ).text
-        #caption_text = caption_element.get_attribute("innerText")
-    except Exception as e:
-        print(f"Error: {e}")
-        caption_text = "Not Found"
-
-    return caption_text
-# UNDER CONSTRUCTION
-def check_comments(driver):
-    """
-    Retrieves the list of comments from an Instagram post or reel by waiting for the comments elements to load.
-
-    Instagram comments are loaded dynamically, so this function waits for the comments elements to become 
-    visible, extracts all the comments, and returns them in a list. If the comments cannot be retrieved or an 
-    error occurs, it returns 'Not Found'.
-
-    Args:
-        driver (WebDriver): The Selenium WebDriver instance that is controlling the browser.
-
-    Returns:
-        list: A list containing the text of all comments on the Instagram post or reel, or "Not Found" if the 
-              comments cannot be retrieved.
-
-    Example:
-        comments = check_comments(driver)
-        print(comments)
-
-    Reference:
-        This function relies on the dynamic loading of Instagram comment elements via Selenium and XPath.
-    """
-    # Wait for the caption element to load
-    
-    #html = "//span[contains(@class, 'x1lliihq x1plvlek xryxfnj x1n2onr6')]"
-    html = "//div[contains(@class, 'x9f619 xjbqb8w x78zum5 x168nmei')]"
-
-    try:
-        comments_element = WebDriverWait(driver, 15).until(
-            EC.presence_of_all_elements_located((By.XPATH, html))
-        )
-        comments_text = [comment.text for comment in comments_element]
-    except Exception as e:
-        print(f"Error: {e}")
-        comments_text = "Not Found"
-    return comments_text
-
 def check_hashtags(driver):
     """
     Retrieves all hashtags mentioned in the caption of an Instagram post or reel.
@@ -535,6 +522,35 @@ def get_data(driver, url):
     driver.get(url)
     time.sleep(5)  # Allow JavaScript to load fully
     return driver
+
+def media_data_request(endpoint, params):
+    # Initialize list to store posts
+    all_posts = []
+
+    response = requests.get(endpoint, params=params)
+    data = response.json()
+
+    if response.status_code != 200:
+        print(response.status_code)
+        print("Response JSON:", response.json())  #
+        return None
+    else:
+        # Collect posts
+        all_posts.extend(data.get("media", {}).get("data", []))
+
+        # Handle pagination
+        i = 1
+        while "paging" in data and "next" in data["paging"] or "paging" in data.get("media", {}) and "next" in data["media"]["paging"]:
+            if i > 1:
+                next_url = data["paging"]["next"]
+            else:
+                next_url = data["media"]["paging"]["next"]
+            response = requests.get(next_url)
+            data = response.json()
+            all_posts.extend(data.get("data", []))
+            i += 1
+            
+        return all_posts
 
 ## --- Manual Scrapers ---
 
@@ -788,6 +804,22 @@ def get_hashtag_data(hashtag, connected_driver=None, login=False):
 if __name__ == "__main__":
     
     placeholder = None
+    
+    #fields = ["biography,followers_count,follows_count,media_count,profile_picture_url"]
+    # fields = "biography"
+    # response = get_profile_data(fields)
+    # pprint(response)
+
+    # fields = "media_type,timestamp"
+    # response = get_media_data(fields)
+    # pprint(response)
+
+    rep = get_demographic_insights()
+    pprint(rep)
+
+    rep = get_actions_insights()
+    pprint(rep)
+ 
 
     #response = get_media_insights("18001667618673220", type="IG image", breakdown=None)
     #print(response.json())
