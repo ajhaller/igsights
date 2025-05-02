@@ -4,9 +4,11 @@ import time
 import random
 import os
 import pickle
+import shutil
 import pandas as pd
 from pprint import pprint
 from PIL import Image
+from io import BytesIO
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -303,6 +305,53 @@ def get_actions_insights():
         
     return data
 
+def get_images():
+    """
+    Downloads images from URLs in a dataframe and moves the images to a Tableau repo shape folder.
+    """
+    config = load_config()
+    posts = pd.read_csv(config["POST_METRICS_PATH"])
+
+    # Ensure 'extraction_date' column is datetime type
+    posts['extraction_date'] = pd.to_datetime(posts['extraction_date'])
+
+    # Filter to only include rows with the most recent extract date
+    most_recent_date = posts['extraction_date'].max()
+    latest_posts = posts[posts['extraction_date'] == most_recent_date]
+
+    # Get unique posts from the latest extract date
+    unique_posts = latest_posts[['post_id', 'media_type']].drop_duplicates().reset_index(drop=True)
+
+    # unique_posts = posts[['post_id', 'media_type']].drop_duplicates().reset_index(drop=True)
+    data = []
+    
+    for _, post in unique_posts.iterrows():
+        post_id = post['post_id']
+        media_type = post['media_type']
+        image_url = first_image_url_request(post_id, media_type)
+        
+        if image_url:
+            try:
+                image_response = requests.get(image_url)
+                image = Image.open(BytesIO(image_response.content))
+            except Exception as e:
+                image = None
+        else:
+            image = None
+        
+        data.append({
+            "post_id": post_id,
+            "image_url": image_url,
+            "image": image
+        })
+    
+    df = pd.DataFrame(data)
+
+    download_images(df)
+    move_images_to_tableau()
+
+    return None
+
 def business_discovery(username):
     """
     Fetches business discovery data for a specific Instagram account using the Facebook Graph API.
@@ -551,6 +600,86 @@ def media_data_request(endpoint, params):
             i += 1
             
         return all_posts
+
+def first_image_url_request(media_id, media_type):
+    config = load_config()
+    url = f"https://graph.facebook.com/v19.0/{media_id}"
+
+    if media_type == "IMAGE" or media_type == "CAROUSEL_ALBUM":
+        params = {
+            "fields": "id,media_type,media_url,children{media_url}",
+            "access_token": config['ACCESS_TOKEN']
+        }
+        
+        response = requests.get(url, params=params)
+        data = response.json()
+        
+        if media_type == "IMAGE":
+            return data.get("media_url")
+        else:
+            return data.get("children", {}).get("data", [{}])[0].get("media_url")
+    elif media_type == "VIDEO":
+        params = {
+            "fields": "id,media_type,media_url,thumbnail_url",
+            "access_token": config['ACCESS_TOKEN']
+        }
+        response = requests.get(url, params=params)
+        data = response.json()
+        return data.get("thumbnail_url")
+    return None
+
+def download_images(df):
+    config = load_config()
+    images_dir = os.path.join(config["RAW_DATA_PATH"], "images")
+
+    # If the directory exists, remove it (faster than deleting contents one by one)
+    if os.path.exists(images_dir):
+        shutil.rmtree(images_dir)
+    os.makedirs(images_dir)
+    
+    # Download images
+    for index, row in df.iterrows():
+        post_id = row["post_id"]
+        image_url = row["image_url"]
+
+        # Skip if image_url is missing or invalid
+        if not isinstance(image_url, str) or not image_url.startswith("http"):
+            print(f"Skipping post {post_id} due to missing or invalid URL: {image_url}")
+            continue
+
+        # Define the image file path
+        image_path = os.path.join(images_dir, f"{post_id}.jpg")
+
+        # Download the image
+        try:
+            response = requests.get(image_url)
+
+            if response.status_code == 200:  # Ensure request was successful
+                with open(image_path, 'wb') as f:
+                    f.write(response.content)
+                print(f"Downloaded image for post {post_id}")
+            else:
+                print(f"Failed to download image for post {post_id}: {response.status_code}")
+
+        except Exception as e:
+            print(f"Error downloading image for post {post_id}: {e}")
+
+def move_images_to_tableau():
+    config = load_config()
+    # Move images to the Tableau repo shapes folder
+    source_dir = os.path.join(config["RAW_DATA_PATH"], "images")
+
+    destination_dir = config["SHAPES_PATH"] + "images/"  # Update with the correct path to the Tableau repo shapes folder
+
+    if os.path.exists(destination_dir):
+        shutil.rmtree(destination_dir)
+
+    try:
+        shutil.copytree(source_dir, destination_dir)
+        print(f"Successfully copied the '{source_dir}' folder to '{destination_dir}'")
+        
+    except Exception as e:
+        print(f"Error copying the folder: {e}")
 
 ## --- Manual Scrapers ---
 
@@ -814,11 +943,11 @@ if __name__ == "__main__":
     # response = get_media_data(fields)
     # pprint(response)
 
-    rep = get_demographic_insights()
-    pprint(rep)
+    # rep = get_demographic_insights()
+    # pprint(rep)
 
-    rep = get_actions_insights()
-    pprint(rep)
+    # rep = get_actions_insights()
+    # pprint(rep)
  
 
     #response = get_media_insights("18001667618673220", type="IG image", breakdown=None)
@@ -853,7 +982,7 @@ if __name__ == "__main__":
     # print(post_data)
 
     # print("Downloading Image...")
-    # post = "https://www.instagram.com/p/DGQxLfTum2n/"
+    # post = "https://www.instagram.com/p/DHdzPUEuJOY/"
     # image_path = download_image(post)
     # print(image_path)
     # # Open and display the image

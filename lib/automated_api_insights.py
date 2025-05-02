@@ -3,7 +3,7 @@ import pandas as pd
 import time
 import datetime
 import schedule
-from ig_data_scraper import load_config, get_media_data, get_profile_data, get_demographic_insights, get_actions_insights
+from ig_data_scraper import load_config, get_media_data, get_profile_data, get_demographic_insights, get_actions_insights, get_images
 from openpyxl import load_workbook
 
 # Helper Functions
@@ -154,6 +154,9 @@ def get_act_insights():
 
     export_df(df, daily_actions_metrics_path, sheet_name="actions_metrics")
 
+def get_post_images():
+    get_images()
+
 # Final Script
 
 def automated_script():
@@ -161,9 +164,10 @@ def automated_script():
     get_profile_insights()
     get_demo_insights()
     get_act_insights()
+    get_post_images()
 
-# Run every day at 4:52PM
-schedule.every().day.at("16:52").do(automated_script)
+# Run every day at 9:32am
+schedule.every().day.at("09:32").do(automated_script)
 
 while True:
     schedule.run_pending()
