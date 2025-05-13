@@ -2,24 +2,20 @@
 
 **igsights** is a custom-built Python pipeline designed to extract Instagram insights data using the Facebook Graph API. By connecting with your Instagram account, it helps you pull important metrics, demographic data, media performance, and more — all in one place. With this repository, you can seamlessly integrate your social media data into your Tableau visualizations, enabling data-driven decision-making for social engagement.
 
-Here’s an example of how I use it in my own Tableau dashboard:
-
-![Igsights Tableau Dashboard](/Users/aushanaehaller/Documents/Documents_Aushanae_MacBook_Pro/Locs/igsights/data/raw_data/images/dashboard_preview.png)
-
-🔗 **View the Tableau Dashboard**: [locwithaush Instagram Dashboard](https://public.tableau.com/views/LocwithaushsDashboard_17437416624580/Overview?:language=en-US&publish=yes&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)
 ---
 
 ##  📌 Table of Contents  
-1. [🎯 Mission](#mission)  
-2. [🚀 Getting Started](#getting-started)  
-3. [🔧 Project Installation Instructions](#project-installation-instructions)  
-4. [💻 Environment Usage](#environment-usage)  
-5. [🔄 Updating the Environment](#updating-the-environment)
-6. [🔐 Authentication & Prerequisites](#authentication-and-prerequisites)
-7. [🗂️ Configuration File Structure](#configuration-file-structure)  
-8. [🤝 Contributing to the Project](#contributing-to-the-project)  
-9. [❓ Getting Help](#getting-help)  
-10. [👤 Who We Are](#who-we-are)  
+1. [🎯 Mission](#mission)
+2. [🧪 Project Usage Example](#project-usage-example)
+3. [🚀 Getting Started](#getting-started)  
+4. [🔧 Project Installation Instructions](#project-installation-instructions)  
+5. [💻 Environment Usage](#environment-usage)  
+6. [🔄 Updating the Environment](#updating-the-environment)
+7. [🔐 Authentication & Prerequisites](#authentication-and-prerequisites)
+8. [🗂️ Configuration File Structure](#configuration-file-structure)  
+9. [🤝 Contributing to the Project](#contributing-to-the-project)  
+10. [❓ Getting Help](#getting-help)  
+11. [👤 Who We Are](#who-we-are)  
 
 ---
 
@@ -43,6 +39,26 @@ To get started with **igsights**, follow the steps below:
 2. **Set up the environment (see Project Setup Instructions)**
 
 3. **Update your `config.json` file with your credentials and paths (see below)**
+
+---
+
+## 🧪 Project Usage Example
+
+After setting up your configuration file and environment, running the automated_api_insights.py pipeline will:
+
+1. Authenticate with the Facebook Graph API.
+2. Extract key Instagram insights such as:
+   - Follower demographics
+   - Post performance (likes, comments, reach, impressions, etc.)
+   - Profile-level metrics
+3. Download the latest post images.
+4. Automatically organize those images for use in Tableau (e.g., for use as custom shapes).
+
+**Here’s an example of how I use it in my own [Tableau dashboard](https://public.tableau.com/views/LocwithaushsDashboard_17437416624580/Overview?:language=en-US&publish=yes&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link):**
+
+![Igsights Tableau Dashboard](data/raw_data/images/dashboard_preview.png)
+
+> 💡 **Tip:** You can schedule this pipeline using a cron job or task scheduler to keep your Tableau dashboards fresh with minimal effort.
 
 ---
 
