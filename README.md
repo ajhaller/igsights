@@ -1,30 +1,30 @@
-# igsights
+# 📊 igsights
 
-**igsights** is a powerful tool designed to extract, analyze, and visualize Instagram insights data using the Facebook Graph API. By connecting with your Instagram account, it helps you pull important metrics, demographic data, media performance, and more — all in one place. With this repository, you can seamlessly integrate your social media data into your Tableau visualizations, enabling data-driven decision-making for social engagement.
-
----
-
-## Table of Contents  
-1. [Mission](#mission)  
-2. [Getting Started](#getting-started)  
-3. [Project Installation Instructions](#project-installation-instructions)  
-4. [Environment Usage](#environment-usage)  
-5. [Updating the Environment](#updating-the-environment)
-6. [Authentication & Prereqs](#authentication-and-prereqs)
-7. [Configuration File Structure](#configuration-file-structure)  
-8. [Contributing to the Project](#contributing-to-the-project)  
-9. [Getting Help](#getting-help)  
-10. [Who We Are](#who-we-are)  
+**igsights** is a powerful tool designed to extract Instagram insights data using the Facebook Graph API. By connecting with your Instagram account, it helps you pull important metrics, demographic data, media performance, and more — all in one place. With this repository, you can seamlessly integrate your social media data into your Tableau visualizations, enabling data-driven decision-making for social engagement.
 
 ---
 
-## Mission
+##  📌 Table of Contents  
+1. [🎯 Mission](#mission)  
+2. [🚀 Getting Started](#getting-started)  
+3. [🔧 Project Installation Instructions](#project-installation-instructions)  
+4. [💻 Environment Usage](#environment-usage)  
+5. [🔄 Updating the Environment](#updating-the-environment)
+6. [🔐 Authentication & Prerequisites](#authentication-and-prerequisites)
+7. [🗂️ Configuration File Structure](#configuration-file-structure)  
+8. [🤝 Contributing to the Project](#contributing-to-the-project)  
+9. [❓ Getting Help](#getting-help)  
+10. [👤 Who We Are](#who-we-are)  
+
+---
+
+## 🎯 Mission
 
 The mission of **igsights** is to provide a seamless and powerful tool for extracting and analyzing Instagram insights. By connecting Instagram's Graph API with visualization tools like Tableau, our goal is to provide data-driven insights for optimizing social media performance, audience engagement, and content strategy. The tool is designed with social impact in mind, helping users make informed decisions to drive meaningful change through engagement.
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 To get started with **igsights**, follow the steps below:
 
@@ -41,26 +41,24 @@ To get started with **igsights**, follow the steps below:
 
 ---
 
-## Project Installation Instructions
+## 🔧 Project Installation Instructions
 
 This project uses Conda for environment management. You can set up your environment with the provided environment.yml file.
 
-### Create the environment:
+Create the environment:
 ```bash
 conda env create -f environment.yml
 ```
-### Activate the environment:
+Activate the environment:
 ```bash
 conda activate igsights
 ```
-### Install any missing dependencies (optional):
-If needed:
-
+Install any missing dependencies (optional):
 ```bash
 conda install [package_name]
 ```
 
-## Environment Usage
+## 💻 Environment Usage
 Once your environment is activated, you can run any of the scripts to extract data.
 
 For example:
@@ -69,18 +67,14 @@ For example:
 python automated_api_insights.py
 ```
 
----
-
-## Updating the Environment  
-
 If new packages are added during development, follow these steps to ensure all team members can stay in sync.  
 
-### Method 1: Create a New Environment File  
+**Method 1: Create a New Environment File**  
 ```bash
 conda env export > igsights_env.yml  
 ```  
 
-### Method 2: Update the Existing `igsights_env.yml` File  
+**Method 2: Update the Existing `igsights_env.yml` File**
 ```bash
 conda env update --file igsights_env.yml --prune  
 ```  
@@ -88,7 +82,7 @@ conda env update --file igsights_env.yml --prune
 
 ---
 
-## Authentication and Prereqs
+## 🔐 Authentication and Prerequisites
 
 ### Getting Access to Facebook/Instagram Data through API
 
@@ -149,7 +143,7 @@ chromedriver --version
 
 ---
 
-## Configuration File Structure
+## 🗂️ Configuration File Structure
 
 The `config.json` file holds all necessary credentials and directory paths for data access, processing, and visualization set up. Below is a description of each key:
 
@@ -171,25 +165,24 @@ The `config.json` file holds all necessary credentials and directory paths for d
 
 ---
 
-## Contributing to the Project
+## 🤝 Contributing to the Project
 
-While this is currently a personal tool, contributions may be welcomed in the future! If you're interested in collaborating, feel free to open an issue or reach out.
+While this is currently a personal tool, contributions may be welcomed in the future! If you're interested in collaborating, feel free to open an issue or reach out!
 
 ---
 
-## Getting Help
+## ❓ Getting Help
 
 If you're running into issues:
 
-* Double check your config.json is correctly formatted.
-* Ensure your access token is valid and has the right permissions.
-* Run scripts inside the activated conda environment ([Environment Usage](#environment-usage)).
+* Double check your config.json is correctly formatted ([🗂️ Configuration File Structure](#configuration-file-structure)).
+* Ensure your access token is valid and has the right permissions ([🔐 Authentication & Prerequisites](#authentication-and-prerequisites)).
+* Run scripts inside the activated conda environment ([💻 Environment Usage](#environment-usage)).
 
 ---
 
-## Who We Are
+## 👤 Who We Are
 
-This project is developed & maintained by **Aushanae Haller**, a data scientist, social impact strategist and creative dedicated to leveraging technology for equity and empowerment.  
-You can learn more about me at my [website](https://www.aushanaehaller.com/).
+This project is developed & maintained by **Aushanae Haller**, a data scientist, social impact strategist and creative dedicated to leveraging technology for equity and empowerment. You can learn more about me at my [website](https://www.aushanaehaller.com/).
 
 ---
