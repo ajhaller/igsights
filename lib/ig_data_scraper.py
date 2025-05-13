@@ -229,7 +229,24 @@ def get_media_insights(post_id, type="IG image", breakdown=None):
     return response
 
 def get_media_data(fields):
-    "Gets media data"
+    """
+    Retrieves media post data along with key engagement insights from the Instagram Graph API.
+
+    This function requests detailed media information (e.g., caption, media type, timestamp) and 
+    associated insights (e.g., impressions, reach, likes, comments, shares, follows, views) 
+    for an Instagram user.
+
+    Args:
+        fields (str): A comma-separated string of media fields to retrieve (e.g., "id,caption,media_url,timestamp").
+
+    Returns:
+        list: A list of dictionaries containing media post data and insights.
+
+    Notes:
+        - Requires a valid access token and Instagram account ID from the config.
+        - Uses version 22.0 of the Instagram Graph API.
+        - Supports pagination to retrieve all posts up to the API limit.
+    """
 
     config = load_config()
     ig_user_id = config ['ACCOUNT_ID']
@@ -246,7 +263,23 @@ def get_media_data(fields):
     return all_posts
 
 def get_profile_data(fields):
-    "Gets profile data"
+    """
+    Retrieves specified profile fields for an Instagram user using the Graph API.
+
+    Sends a request to the Instagram Graph API to fetch user profile data based on the
+    provided list of fields.
+
+    Args:
+        fields (str): A comma-separated string of fields to retrieve (e.g., "username,biography,followers_count").
+
+    Returns:
+        dict: A JSON-like dictionary containing the requested profile information.
+
+    Notes:
+        - Requires a valid access token and Instagram account ID from the config.
+        - Uses version 22.0 of the Instagram Graph API.
+        - The 'limit' parameter is included but may be ignored depending on the requested fields.
+    """
 
     config = load_config()
     ig_user_id = config ['ACCOUNT_ID']
@@ -264,7 +297,23 @@ def get_profile_data(fields):
     return data
 
 def get_demographic_insights():
-    "Gets profile data"
+    """
+    Retrieves lifetime Instagram demographic insights for the current month using the Graph API.
+
+    This function queries the Instagram Graph API for lifetime metrics related to audience demographics,
+    including the age and gender breakdowns of engaged users, reached users, and followers.
+
+    Returns:
+        dict: A JSON-like dictionary containing demographic insights for the current month.
+
+    Notes:
+        - Requires a valid access token and Instagram account ID from the config.
+        - Uses version 22.0 of the Instagram Graph API.
+        - Metrics returned include:
+            - engaged_audience_demographics
+            - reached_audience_demographics
+            - follower_demographics
+    """
 
     config = load_config()
     ig_user_id = config ['ACCOUNT_ID']
@@ -286,6 +335,21 @@ def get_demographic_insights():
     return lifetime_data
 
 def get_actions_insights():
+    """
+    Retrieves daily Instagram account action insights for the current month using the Graph API.
+
+    This function sends a request to the Instagram Graph API to obtain daily metrics such as reach,
+    website clicks, profile views, interactions, likes, comments, and more. The metrics are aggregated
+    for the current month using the "day" period and returned as JSON.
+
+    Returns:
+        dict: A JSON-like dictionary containing the requested insight metrics for the current month.
+
+    Notes:
+        - Requires a valid access token and Instagram account ID from the config file.
+        - Uses version 22.0 of the Instagram Graph API.
+        - Metrics returned include user engagement and account interaction indicators.
+    """
 
     config = load_config()
     ig_user_id = config ['ACCOUNT_ID']
@@ -307,10 +371,25 @@ def get_actions_insights():
 
 def get_images():
     """
-    Downloads images from URLs in a dataframe and moves the images to a Tableau repo shape folder.
+    Retrieves and stores the most recent Instagram post images for Tableau visualization.
+
+    This function performs the following steps:
+    1. Loads the cleaned post metrics CSV file from the configured path.
+    2. Filters the dataset to only include posts from the most recent extraction date.
+    3. Extracts unique post IDs and media types for the latest posts.
+    4. Uses the Instagram Graph API to fetch the image URL for each post.
+    5. Downloads and loads each image using Pillow.
+    6. Saves the images locally and moves them to the configured Tableau shapes directory.
+
+    The images are intended for use in Tableau dashboards (e.g., as custom shapes),
+    and this function ensures that only the most up-to-date post visuals are included.
+
+    Returns:
+        None
     """
+    
     config = load_config()
-    posts = pd.read_csv(config["POST_METRICS_PATH"])
+    posts = pd.read_csv(config["CLEANED_DATA_PATH"] + "daily_post_metrics.csv")
 
     # Ensure 'extraction_date' column is datetime type
     posts['extraction_date'] = pd.to_datetime(posts['extraction_date'])
@@ -573,6 +652,25 @@ def get_data(driver, url):
     return driver
 
 def media_data_request(endpoint, params):
+    """
+    Sends a request to the Instagram Graph API to retrieve media post data, handling pagination.
+
+    This function fetches media posts from a given API endpoint using the provided parameters,
+    appends the results to a list, and continues retrieving data through pagination links until
+    all available posts have been collected.
+
+    Args:
+        endpoint (str): The initial URL endpoint to send the GET request to.
+        params (dict): A dictionary of parameters to include in the initial request (e.g., access token, fields).
+
+    Returns:
+        list or None: A list of media post data dictionaries if successful, or None if the request fails.
+
+    Notes:
+        - Prints the status code and response if the initial request is unsuccessful.
+        - Supports pagination through the 'paging.next' field in the response.
+        - Designed for use with Instagram Graph API responses that nest media under a "media" field.
+    """
     # Initialize list to store posts
     all_posts = []
 
@@ -602,6 +700,26 @@ def media_data_request(endpoint, params):
         return all_posts
 
 def first_image_url_request(media_id, media_type):
+    """
+    Retrieves the appropriate image URL for a given media object from the Instagram Graph API.
+
+    Depending on the media type, this function returns:
+        - The direct media URL for single images.
+        - The first image URL from a carousel album.
+        - The thumbnail URL for videos.
+
+    Args:
+        media_id (str): The ID of the media object to retrieve.
+        media_type (str): The type of media. Expected values are "IMAGE", "CAROUSEL_ALBUM", or "VIDEO".
+
+    Returns:
+        str or None: The URL of the media image or thumbnail. Returns None if the media type is unrecognized
+        or if the expected URL cannot be extracted.
+
+    Notes:
+        - Requires a valid access token in the loaded config.
+        - Uses version 19.0 of the Instagram Graph API.
+    """
     config = load_config()
     url = f"https://graph.facebook.com/v19.0/{media_id}"
 
@@ -629,6 +747,22 @@ def first_image_url_request(media_id, media_type):
     return None
 
 def download_images(df):
+    """
+    Downloads images from URLs in a DataFrame and saves them to a local directory.
+
+    This function reads image URLs and corresponding post IDs from the provided DataFrame,
+    deletes any existing 'images' directory in the raw data path (as specified in the config),
+    creates a new one, and downloads each image as a JPEG using the post ID as the filename.
+
+    Args:
+        df (pandas.DataFrame): A DataFrame containing at least two columns:
+            - 'post_id': Unique identifier for each image (used as the filename).
+            - 'image_url': Direct URL to the image.
+
+    Notes:
+        - Skips any row with an invalid or missing image URL.
+        - Prints progress and error messages during the download process.
+    """
     config = load_config()
     images_dir = os.path.join(config["RAW_DATA_PATH"], "images")
 
@@ -665,6 +799,16 @@ def download_images(df):
             print(f"Error downloading image for post {post_id}: {e}")
 
 def move_images_to_tableau():
+    """
+    Copies image files from a raw data directory to the Tableau shapes folder.
+
+    This function loads configuration settings, locates the source directory containing images,
+    and copies it to the specified destination used by Tableau for custom shapes. If the destination
+    folder already exists, it will be removed before copying the new files.
+
+    Raises:
+        Prints an error message if the copy operation fails.
+    """
     config = load_config()
     # Move images to the Tableau repo shapes folder
     source_dir = os.path.join(config["RAW_DATA_PATH"], "images")
