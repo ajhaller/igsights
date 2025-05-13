@@ -314,8 +314,8 @@ def automated_script():
     get_act_insights()
     get_post_images()
 
-# Run every day at 9:32am
-schedule.every().day.at("09:32").do(automated_script)
+# Run every day at 2:14pm
+schedule.every().day.at("14:14").do(automated_script)
 
 while True:
     schedule.run_pending()

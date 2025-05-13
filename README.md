@@ -1,7 +1,12 @@
-# 📊 igsights
+# 📊 Igsights: Instagram Insights Extraction Pipeline
 
-**igsights** is a powerful tool designed to extract Instagram insights data using the Facebook Graph API. By connecting with your Instagram account, it helps you pull important metrics, demographic data, media performance, and more — all in one place. With this repository, you can seamlessly integrate your social media data into your Tableau visualizations, enabling data-driven decision-making for social engagement.
+**igsights** is a custom-built Python pipeline designed to extract Instagram insights data using the Facebook Graph API. By connecting with your Instagram account, it helps you pull important metrics, demographic data, media performance, and more — all in one place. With this repository, you can seamlessly integrate your social media data into your Tableau visualizations, enabling data-driven decision-making for social engagement.
 
+Here’s an example of how I use it in my own Tableau dashboard:
+
+![Igsights Tableau Dashboard](/Users/aushanaehaller/Documents/Documents_Aushanae_MacBook_Pro/Locs/igsights/data/raw_data/images/dashboard_preview.png)
+
+🔗 **View the Tableau Dashboard**: [locwithaush Instagram Dashboard](https://public.tableau.com/views/LocwithaushsDashboard_17437416624580/Overview?:language=en-US&publish=yes&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)
 ---
 
 ##  📌 Table of Contents  
