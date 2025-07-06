@@ -106,6 +106,27 @@ def parse_timestamp(df):
 
     return df
 
+# Custom Post Classification
+
+def classify_caption(row):
+    caption = str(row['caption']).lower()
+    date_threshold_pre_influencer = datetime.datetime(2025, 2, 4)
+    date_threshold_self_liberation = datetime.datetime(2025, 4, 7)
+    date_threshold_lifestyle = datetime.datetime(2025, 3, 7)
+
+    if row['publish_date'] < date_threshold_pre_influencer:
+        return 'locs'
+    elif any(tag in caption for tag in ['progress', 'texture', 'wrap']):
+        return 'locs'
+    elif any(tag in caption for tag in ['recap', 'dump']) and row['publish_date'] > date_threshold_lifestyle:
+        return 'lifestyle'
+    elif any(tag in caption for tag in ['creative', 'creativity', 'art', 'liberation']) and row['publish_date'] > date_threshold_self_liberation:
+        return 'self liberation'
+    elif any(tag in caption for tag in ['loc', 'hair']):
+        return 'locs'
+    else:
+        return 'lifestyle'
+
 # Requests
 
 def get_media_insights():
@@ -161,6 +182,8 @@ def get_media_insights():
     # Format dates
     df = add_extraction_datetime(df)
     df = parse_timestamp(df)
+    df['publish_date'] = pd.to_datetime(df['publish_date'], errors='coerce')
+    df['content_pillar'] = df.apply(classify_caption, axis=1)
 
     export_df(df, daily_post_metrics_path, sheet_name="post_metrics")
 
@@ -314,8 +337,8 @@ def automated_script():
     get_act_insights()
     get_post_images()
 
-# Run every day at 2:14pm
-schedule.every().day.at("14:14").do(automated_script)
+# Run every day
+schedule.every().day.at("17:38").do(automated_script)
 
 while True:
     schedule.run_pending()
